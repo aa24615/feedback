@@ -1,0 +1,120 @@
+# 一键部署：docker compose up -d --build
+# 首次启动会自动建库、迁移、写入演示数据（demo@feedback.dev / 123456，并提升为管理员）
+# 注意：需本地已有 node:20-alpine / nginx:alpine / mysql:8.0 镜像（或配置了可用镜像源）
+#
+# 数据库：
+#   - 本地/演示：自带 mysql 容器，用 `docker compose --profile local-db up -d`（默认 docker compose up -d 也会带上）
+#   - 生产（外部 MySQL）：在 .env 设置 DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME，
+#     然后 `docker compose up -d backend web`，不启动自带 mysql 容器。
+#     init-db.js 支持外部托管库：用 INIT_DB_USER 指定主账号（非 root 时），
+#     已预先建好库与账号则设 INIT_SKIP_USER=1 跳过建账号/授权。
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: feedback-mysql
+    hostname: mysql
+    # 仅本地/演示用：自带 MySQL 容器。生产使用外部 MySQL 时，
+    # 运行 `docker compose up -d backend web` 即可不启动本服务；
+    # 或保留此 profile，仅 `docker compose --profile local-db up -d` 才启动。
+    profiles: ["local-db"]
+    restart: unless-stopped
+    networks:
+      - 1panel-network
+    command:
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --innodb-buffer-pool-size=256M
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      MYSQL_DATABASE: ${DB_NAME:-feedback}
+      MYSQL_USER: ${DB_USER:-feedback}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-feedback123}
+      TZ: Asia/Shanghai
+    # 仅本机调试需要；生产可注释掉，容器网络内 backend 可直接访问
+    ports:
+      - "${MYSQL_PORT:-3307}:3306"
+    volumes:
+      # 数据持久化到当前项目 ./data/mysql（相对 compose 文件所在目录），便于备份与迁移
+      - ./data/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root123456}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./server
+    container_name: feedback-backend
+    restart: unless-stopped
+    networks:
+      - 1panel-network
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      API_PREFIX: /api
+      # 数据库：生产指向外部 MySQL（在 .env 设置 DB_HOST / DB_PORT / DB_USER / DB_PASSWORD / DB_NAME）
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-feedback}
+      DB_PASSWORD: ${DB_PASSWORD:-feedback123}
+      DB_NAME: ${DB_NAME:-feedback}
+      DB_POOL_LIMIT: "10"
+      # init-db 初始化连接账号（建库/迁移）：【默认留空，即直接用应用账号 DB_USER/DB_PASSWORD 初始化，无需 root】
+      #   仅当应用账号无建库权限时，才设 INIT_DB_USER（如 root / RDS 主账号）+ 对应密码；
+      #   账号已预先建好时，设 INIT_SKIP_USER=1 跳过建账号/授权。
+      INIT_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      INIT_DB_USER: ${INIT_DB_USER:-}
+      INIT_DB_PASSWORD: ${INIT_DB_PASSWORD:-}
+      INIT_SKIP_USER: ${INIT_SKIP_USER:-}
+      # 安全：务必在 .env 中改为随机长串（见 .env.example）
+      JWT_SECRET: ${JWT_SECRET:?请在 .env 中设置 JWT_SECRET}
+      JWT_EXPIRES_IN: 7d
+      EMBED_SECRET: ${EMBED_SECRET:?请在 .env 中设置 EMBED_SECRET}
+      # 首个管理员账号（该邮箱已存在时自动提升为 admin）
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-demo@feedback.dev}
+      # 对外访问地址（用于邮件/OG 等绝对链接）。默认即端口直连，无需配置；
+      # 有域名时再改为 https://your-domain.com 即可（在本目录 .env 设置）。
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8081}
+      WEB_BASE_URL: ${WEB_BASE_URL:-http://localhost:8081}
+      # CORS：后端默认允许所有来源（反射请求 Origin），无需额外配置即可跨域（分域名/嵌入均可）。
+      # 文件存储：local（默认，挂载到当前项目 ./data/uploads）/ cos / oss
+      # cos / oss 的密钥在 .env 中配置即可
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      UPLOAD_DIR: /app/uploads
+      MAX_UPLOAD_MB: "5"
+      MAX_VIDEO_MB: "50"
+      MAX_POST_ATTACHMENTS: "9"
+      ALLOW_MIME: image/png,image/jpeg,image/gif,image/webp
+    ports:
+      # 本机直接调 API 用（如 curl/联调）；不需要可注释
+      - "${BACKEND_PORT:-4000}:4000"
+    volumes:
+      # 上传文件持久化到当前项目 ./data/uploads（相对 compose 文件所在目录）
+      - ./data/uploads:/app/uploads
+    # 不再 depends_on 本地 mysql：生产用外部 MySQL 时无本地 mysql 服务；
+    # 由 init-db.js 自带重试等待数据库就绪（最多 30 次 / 2s 间隔）。
+
+  web:
+    build:
+      context: ./web
+      args:
+        # 前端 API 基础地址：留空=相对 /api（web nginx 反代 backend）；生产设为独立 API 域名
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    container_name: feedback-web
+    restart: unless-stopped
+    networks:
+      - 1panel-network
+    ports:
+      - "${WEB_PORT:-8081}:80"
+    depends_on:
+      - backend
+
+networks:
+  # 接入 1Panel 已有网络，便于通过 1Panel 反向代理暴露 web，
+  # 以及让 backend 访问同样位于该网络上的外部 MySQL。
+  # 注意：该网络需在宿主机已存在（1Panel 主机自带；本地演示可 `docker network create 1panel-network`）。
+  1panel-network:
+    external: true
+

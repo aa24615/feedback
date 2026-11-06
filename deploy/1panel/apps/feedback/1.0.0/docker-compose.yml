@@ -1,0 +1,88 @@
+# 1Panel 应用商店模板 —— FeedbackWall 反馈墙（开源版）1.0.0
+# 变量由 1Panel 安装表单注入，见同级 data.yml。
+# 三容器一体：web(nginx) + backend(node) + mysql，无需预先安装数据库服务。
+# 镜像由仓库 .github/workflows/docker-publish.yml 构建并推送到 GHCR。
+services:
+  web:
+    image: ghcr.io/aa24615/feedback-web:1.0.0
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    ports:
+      - ${PANEL_APP_PORT_HTTP}:80
+    depends_on:
+      - backend
+    networks:
+      - 1panel-network
+    labels:
+      createdBy: "Apps"
+
+  backend:
+    image: ghcr.io/aa24615/feedback-backend:1.0.0
+    # web 的 nginx 反代固定指向 http://backend:4000，故服务名必须为 backend
+    container_name: ${CONTAINER_NAME}-backend
+    restart: always
+    depends_on:
+      - mysql
+    networks:
+      - 1panel-network
+    environment:
+      NODE_ENV: production
+      TZ: Asia/Shanghai
+      PORT: "4000"
+      API_PREFIX: /api
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: ${PANEL_DB_NAME}
+      DB_USER: ${PANEL_DB_USER}
+      DB_PASSWORD: ${PANEL_DB_USER_PASSWORD}
+      DB_POOL_LIMIT: "10"
+      # 自带 MySQL 已由镜像预建库与应用账号，初始化脚本直接用应用账号即可
+      INIT_ROOT_PASSWORD: ${PANEL_DB_ROOT_PASSWORD}
+      JWT_SECRET: ${PANEL_APP_JWT_SECRET}
+      JWT_EXPIRES_IN: 7d
+      EMBED_SECRET: ${PANEL_APP_EMBED_SECRET}
+      ADMIN_EMAIL: ${PANEL_ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${PANEL_ADMIN_PASSWORD}
+      PUBLIC_BASE_URL: ${FEEDBACK_BASE_URL}
+      WEB_BASE_URL: ${FEEDBACK_BASE_URL}
+      STORAGE_DRIVER: local
+      UPLOAD_DIR: /app/uploads
+      MAX_UPLOAD_MB: "5"
+      MAX_VIDEO_MB: "50"
+      MAX_POST_ATTACHMENTS: "9"
+      ALLOW_MIME: image/png,image/jpeg,image/gif,image/webp
+    volumes:
+      - ./data/uploads:/app/uploads
+    labels:
+      createdBy: "Apps"
+
+  mysql:
+    image: mysql:8.0.36
+    container_name: ${CONTAINER_NAME}-mysql
+    restart: always
+    networks:
+      - 1panel-network
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=256M
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${PANEL_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${PANEL_DB_NAME}
+      MYSQL_USER: ${PANEL_DB_USER}
+      MYSQL_PASSWORD: ${PANEL_DB_USER_PASSWORD}
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${PANEL_DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    labels:
+      createdBy: "Apps"
+
+networks:
+  1panel-network:
+    external: true

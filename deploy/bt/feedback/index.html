@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>反馈墙（开源版）</title>
+  <style>
+    body { padding: 20px; font-size: 13px; color: #333; background: #fff; }
+    .fb-card { border: 1px solid #e6e8eb; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; }
+    .fb-card h3 { margin: 0 0 12px; font-size: 15px; font-weight: 600; }
+    .fb-row { margin: 8px 0; line-height: 1.8; }
+    .fb-muted { color: #888; }
+    .fb-btn { display: inline-block; padding: 6px 14px; margin: 4px 6px 4px 0; border: 1px solid #d0d5dd;
+              border-radius: 5px; background: #fff; cursor: pointer; font-size: 13px; }
+    .fb-btn:hover { border-color: #4f46e5; color: #4f46e5; }
+    .fb-btn.primary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    .fb-btn.danger { color: #d03050; border-color: #f0c2cc; }
+    pre { background: #f7f8fa; border: 1px solid #eee; border-radius: 6px; padding: 12px;
+          max-height: 320px; overflow: auto; white-space: pre-wrap; word-break: break-all; font-size: 12px; }
+    .fb-tip { background: #f5f3ff; border-left: 3px solid #4f46e5; padding: 10px 14px; line-height: 1.9; }
+    code { background: #f2f3f5; padding: 1px 5px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="fb-card">
+    <h3>反馈墙（开源版）· 应用管理</h3>
+    <div class="fb-row">自托管的用户反馈收集与管理系统，由 Docker Compose 运行 <code>web + backend + mysql</code> 三个容器。</div>
+    <div class="fb-row fb-muted">状态：<span id="fb-state">加载中…</span></div>
+    <div class="fb-row fb-muted">容器：<span id="fb-ps">—</span></div>
+    <div style="margin-top:12px">
+      <button class="fb-btn primary" onclick="fbAct('deploy')">一键部署 / 更新</button>
+      <button class="fb-btn" onclick="fbAct('restart_app')">重启</button>
+      <button class="fb-btn" onclick="fbAct('stop')">停止</button>
+      <button class="fb-btn" onclick="fbRefresh()">刷新状态</button>
+      <button class="fb-btn" onclick="fbText('get_credentials')">查看初始账号</button>
+      <button class="fb-btn" onclick="fbText('get_logs')">查看部署日志</button>
+      <button class="fb-btn danger" onclick="fbConfirmUninstall()">卸载应用（保留数据）</button>
+    </div>
+  </div>
+
+  <div class="fb-card">
+    <h3>输出 / 日志</h3>
+    <pre id="fb-out">点击上方按钮查看输出。</pre>
+  </div>
+
+  <div class="fb-card fb-tip">
+    <strong>接入域名</strong>：在宝塔「网站」新建站点 →「反向代理」指向 <code>http://127.0.0.1:8081</code>（以 <code>.env</code> 的 WEB_PORT 为准）。<br>
+    绑定域名后请把 <code>/www/wwwroot/feedback/.env</code> 里的 <code>PUBLIC_BASE_URL</code> / <code>WEB_BASE_URL</code> 改成实际域名，再点「重启」。<br>
+    <strong>访问路径</strong>：<code>http://域名/#/login</code>（HashRouter，必须带 <code>#</code>）。<br>
+    <strong>数据</strong>：<code>/www/wwwroot/feedback/data/mysql</code> 与 <code>data/uploads</code>，卸载不会删除，请自行备份。<br>
+    <strong>源码</strong>：<a href="https://github.com/aa24615/feedback" target="_blank">github.com/aa24615/feedback</a>
+  </div>
+
+  <script>
+    // 宝塔第三方应用插件接口：/plugin?action=a&s=方法名&name=插件名
+    // 若你的面板版本接口路径不同，只需修改下面这一行。
+    var FB_API = '/plugin?action=a&s=';
+
+    function fbCall(s, data) {
+      var body = new URLSearchParams(data || {}).toString();
+      return fetch(FB_API + encodeURIComponent(s) + '&name=feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body
+      }).then(function (r) { return r.json(); });
+    }
+    function fbOut(t) { document.getElementById('fb-out').textContent = t || '（无输出）'; }
+    function fbAct(s) {
+      fbOut('任务已提交，请稍后点击「刷新状态」…');
+      fbCall(s, {}).then(function (r) {
+        fbOut(r.msg || r.data || JSON.stringify(r));
+        setTimeout(fbRefresh, 1500);
+      }).catch(function (e) { fbOut('请求失败：' + e); });
+    }
+    function fbText(s) {
+      fbCall(s, {}).then(function (r) { fbOut(r.msg || JSON.stringify(r)); })
+        .catch(function (e) { fbOut('请求失败：' + e); });
+    }
+    function fbRefresh() {
+      fbCall('get_status', {}).then(function (r) {
+        var d = (r && r.data) || {};
+        var raw = String(d.raw || '');
+        var m = raw.match(/HTTP_CODE=(\d+)/);
+        var port = (raw.match(/PORT=(\d+)/) || [])[1] || '8081';
+        var code = m ? m[1] : '000';
+        document.getElementById('fb-state').textContent = !d.has_env
+          ? '未初始化（请点一键部署）'
+          : (code === '200' ? '运行中 ✓  http://127.0.0.1:' + port + '/#/login' : '未响应（HTTP ' + code + '），可能在构建中');
+        document.getElementById('fb-ps').textContent = raw.split('\n').filter(function (l) {
+          return /feedback-|NAME|running|Up /.test(l);
+        }).slice(0, 6).join(' | ') || '—';
+        fbOut(d.log || '（暂无日志）');
+      }).catch(function (e) { fbOut('状态获取失败：' + e); });
+    }
+    function fbConfirmUninstall() {
+      if (confirm('确定停止并卸载反馈墙容器吗？\n数据目录 ./data 与 .env 会被保留。')) fbAct('uninstall_app');
+    }
+    fbRefresh();
+    setInterval(fbRefresh, 15000);
+  </script>
+</body>
+</html>

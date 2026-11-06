@@ -1,0 +1,37 @@
+# 自建本地应用商店的全局元数据（1Panel appstore 根 data.yaml 格式）
+# 直接把 deploy/1panel/ 整个目录作为一个本地应用商店源即可使用。
+# 若需要全部分类，可从官方 https://github.com/1Panel-dev/appstore 的 data.yaml 复制。
+name: FeedbackWall Store
+title: 反馈墙开源版 · 本地应用商店
+additionalProperties:
+  tags:
+    - key: Tool
+      name: 实用工具
+      sort: 50
+      locales:
+        en: "Tool"
+        ja: "ツール"
+        ms: "Alatan"
+        pt-br: "Ferramentas"
+        ru: "Инструменты"
+        ko: "도구"
+        zh-hant: "實用工具"
+        zh: "实用工具"
+        tr: "Araçlar"
+        es-es: "Herramientas"
+        fa: 'ابزارها'
+    - key: Website
+      name: 建站
+      sort: 10
+      locales:
+        en: "Website"
+        ja: "ウェブサイト"
+        ms: "Laman Web"
+        pt-br: "Website"
+        ru: "Веб-сайт"
+        ko: "웹사이트"
+        zh-hant: "網站"
+        zh: "建站"
+        tr: "Web Siteleri"
+        es-es: "Sitio web"
+        fa: 'وب سایت'

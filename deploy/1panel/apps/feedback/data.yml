@@ -1,0 +1,35 @@
+name: FeedbackWall
+tags:
+  - 实用工具
+title: 开源的用户反馈收集与管理系统
+description: "自托管的开源版反馈墙，支持反馈收集、投票评论、状态流转、数据看板、通知推送、开放 API 与嵌入组件"
+additionalProperties:
+  key: feedback
+  name: FeedbackWall
+  tags:
+    - Tool
+  shortDescZh: 开源的用户反馈收集与管理系统
+  shortDescEn: Open-source user feedback collection and management system
+  description:
+    en: "A self-hosted, open-source feedback board. Collect ideas, bugs and questions; vote, discuss, track status, and close the loop with your users. Ships with dashboards, notifications, CSV export, open API and an embeddable widget."
+    zh: "自托管的开源版反馈墙。收集建议、问题与提问，支持投票、评论、官方回复、状态流转与数据看板，并内置通知推送、CSV 导出、开放 API 与嵌入组件。内置管理员账号，部署即用，全部功能默认解锁。"
+    zh-Hant: "自託管的開源版回饋牆。收集建議、問題與提問，支援投票、評論、官方回覆、狀態流轉與資料看板，並內建通知推送、CSV 匯出、開放 API 與嵌入元件。內建管理員帳號，無需註冊，全部功能無限制。"
+    ja: "セルフホスト型のオープンソースフィードバックボード。要望・不具合・質問を収集し、投票、コメント、ステータス管理、ダッシュボード、通知、CSV エクスポート、API、埋め込みウィジェットに対応。"
+    ko: "자체 호스팅 오픈소스 피드백 보드. 아이디어·버그·질문 수집, 투표·댓글·상태 관리·대시보드·알림·CSV 내보내기·API·임베드 위젯을 지원합니다."
+    ru: "Система сбора обратной связи с открытым кодом: голосование, комментарии, статусы, дашборды, уведомления, экспорт CSV, API и встраиваемый виджет."
+    pt-br: "Sistema open source de feedback auto-hospedado: votação, comentários, status, painéis, notificações, exportação CSV, API e widget incorporável."
+    es-es: "Sistema de feedback open source autoalojado: votaciones, comentarios, estados, paneles, notificaciones, exportación CSV, API y widget embebible."
+    ms: "Sistem maklum balas sumber terbuka: undian, komen, status, papan pemuka, notifikasi, eksport CSV, API dan widget terbenam."
+    tr: "Açık kaynak, kendi sunucunuzda çalışan geri bildirim sistemi: oylama, yorumlar, durumlar, paneller, bildirimler, CSV dışa aktarma, API ve gömülebilir bileşen."
+    fa: 'سامانه متن باز بازخورد کاربران: رأی گیری، نظرات، وضعیت ها، داشبورد، اعلان ها، خروجی CSV، API و ابزارک توکار'
+  type: website
+  crossVersionUpdate: false
+  limit: 0
+  recommend: 50
+  website: https://github.com/aa24615/feedback
+  github: https://github.com/aa24615/feedback
+  document: https://github.com/aa24615/feedback/blob/open-source/README.md
+  memoryRequired: 1024
+  architectures:
+    - amd64
+    - arm64

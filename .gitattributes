@@ -1,0 +1,22 @@
+# 保证部署脚本在任何平台 checkout 后都是 LF（否则 Linux/宝塔上会报 \r: command not found）
+* text=auto
+
+*.sh   text eol=lf
+*.py   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.js   text eol=lf
+*.jsx  text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.md   text eol=lf
+*.env  text eol=lf
+
+# 二进制资源不做行尾转换
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.svg  text eol=lf
+*.ico  binary
+*.zip  binary

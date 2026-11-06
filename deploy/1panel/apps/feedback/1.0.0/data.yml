@@ -1,0 +1,146 @@
+additionalProperties:
+  formFields:
+    - default: 8081
+      edit: true
+      envKey: PANEL_APP_PORT_HTTP
+      labelEn: Access Port
+      labelZh: 访问端口
+      required: true
+      rule: paramPort
+      type: number
+      label:
+        en: Access Port
+        zh: 访问端口
+        zh-Hant: 存取埠
+        ja: アクセスポート
+        ko: 접속 포트
+        ru: Порт доступа
+    - default: http://127.0.0.1:8081
+      edit: true
+      envKey: FEEDBACK_BASE_URL
+      labelEn: Public URL
+      labelZh: 对外访问地址
+      required: true
+      type: text
+      label:
+        en: Public URL (domain or IP, used for links and image URL fallback)
+        zh: 对外访问地址（填域名或 IP，用于邮件链接与图片地址兜底）
+        zh-Hant: 對外存取位址（填網域或 IP）
+        ja: 公開 URL（メールリンク・画像 URL の予備に使用）
+        ko: 공개 URL (링크 및 이미지 URL 폴백용)
+        ru: Публичный URL (для ссылок и запасного адреса изображений)
+    - default: admin@feedback.local
+      edit: true
+      envKey: PANEL_ADMIN_EMAIL
+      labelEn: Admin Email
+      labelZh: 管理员邮箱
+      required: true
+      type: text
+      label:
+        en: Admin Email (login account)
+        zh: 管理员邮箱（登录账号）
+        zh-Hant: 管理員信箱（登入帳號）
+        ja: 管理者メールアドレス（ログイン ID）
+        ko: 관리자 이메일 (로그인 계정)
+        ru: Email администратора (логин)
+    - default: feedback_admin
+      edit: true
+      envKey: PANEL_ADMIN_PASSWORD
+      labelEn: Admin Password
+      labelZh: 管理员密码
+      random: true
+      required: true
+      type: password
+      label:
+        en: Admin Password (save it for first login)
+        zh: 管理员密码（请保存，首次登录使用）
+        zh-Hant: 管理員密碼（請保存，首次登入使用）
+        ja: 管理者パスワード（初回ログインに使用）
+        ko: 관리자 비밀번호 (최초 로그인에 사용)
+        ru: Пароль администратора (сохраните для первого входа)
+    - default: change-me
+      envKey: PANEL_APP_JWT_SECRET
+      labelEn: JWT Secret
+      labelZh: JWT 密钥
+      random: true
+      required: true
+      type: password
+      label:
+        en: JWT Secret
+        zh: JWT 密钥
+        zh-Hant: JWT 密鑰
+        ja: JWT シークレット
+        ko: JWT 시크릿
+        ru: Секрет JWT
+    - default: change-me
+      envKey: PANEL_APP_EMBED_SECRET
+      labelEn: Embed Secret
+      labelZh: 嵌入组件密钥
+      random: true
+      required: true
+      type: password
+      label:
+        en: Embed Secret
+        zh: 嵌入组件密钥
+        zh-Hant: 嵌入元件密鑰
+        ja: 埋め込み用シークレット
+        ko: 임베드 시크릿
+        ru: Секрет для встраивания
+    - default: feedback_root
+      envKey: PANEL_DB_ROOT_PASSWORD
+      labelEn: MySQL Root Password
+      labelZh: MySQL root 密码
+      random: true
+      required: true
+      type: password
+      label:
+        en: MySQL Root Password
+        zh: MySQL root 密码
+        zh-Hant: MySQL root 密碼
+        ja: MySQL root パスワード
+        ko: MySQL root 비밀번호
+        ru: Пароль root MySQL
+    - default: feedback
+      envKey: PANEL_DB_NAME
+      labelEn: Database Name
+      labelZh: 数据库名
+      random: true
+      required: true
+      rule: paramCommon
+      type: text
+      label:
+        en: Database Name
+        zh: 数据库名
+        zh-Hant: 資料庫名稱
+        ja: データベース名
+        ko: 데이터베이스 이름
+        ru: Имя базы данных
+    - default: feedback
+      envKey: PANEL_DB_USER
+      labelEn: Database User
+      labelZh: 数据库用户
+      random: true
+      required: true
+      rule: paramCommon
+      type: text
+      label:
+        en: Database User
+        zh: 数据库用户
+        zh-Hant: 資料庫使用者
+        ja: データベースユーザー
+        ko: 데이터베이스 사용자
+        ru: Пользователь БД
+    - default: feedback_pass
+      envKey: PANEL_DB_USER_PASSWORD
+      labelEn: Database Password
+      labelZh: 数据库密码
+      random: true
+      required: true
+      type: password
+      label:
+        en: Database Password
+        zh: 数据库密码
+        zh-Hant: 資料庫密碼
+        ja: データベースパスワード
+        ko: 데이터베이스 비밀번호
+        ru: Пароль БД

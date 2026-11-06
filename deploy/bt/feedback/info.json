@@ -1,0 +1,14 @@
+{
+  "title": "反馈墙（开源版）",
+  "name": "feedback",
+  "ps": "开源的用户反馈收集与管理系统，Docker 一键部署，内置管理员账号",
+  "versions": "1.0.0",
+  "checks": "/www/server/panel/plugin/feedback",
+  "author": "aa24615",
+  "home": "https://github.com/aa24615/feedback",
+  "type": "免费应用",
+  "tip": "lib",
+  "date": "2026-11-07",
+  "default": false,
+  "display": 0
+}

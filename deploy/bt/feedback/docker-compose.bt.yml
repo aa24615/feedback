@@ -1,0 +1,90 @@
+# 宝塔面板专用编排模板（FeedbackWall 开源版 1.0.0）
+# 与仓库根 docker-compose.yml 的区别：
+#   1) 不依赖 1Panel 的 external 网络，改用本文件自建的 bridge 网络 feedback-net；
+#   2) 同时声明 image 与 build：默认 `up -d --build` 用本地源码构建，不依赖 GHCR 是否发布；
+#      若已发布镜像，可改用 `docker compose -f docker-compose.bt.yml pull && ... up -d`（更快）。
+#   3) 数据库端口不暴露到宿主机，只在容器网络内可达。
+# 所有变量从同目录 .env 读取（由 install.sh 生成）。
+services:
+  web:
+    image: ghcr.io/aa24615/feedback-web:1.0.0
+    build:
+      context: ./web
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    container_name: feedback-web
+    restart: always
+    ports:
+      - "${WEB_PORT:-8081}:80"
+    depends_on:
+      - backend
+    networks:
+      - feedback-net
+
+  backend:
+    image: ghcr.io/aa24615/feedback-backend:1.0.0
+    build:
+      context: ./server
+    # web 的 nginx 反代固定指向 http://backend:4000，服务名必须为 backend
+    container_name: feedback-backend
+    restart: always
+    depends_on:
+      - mysql
+    networks:
+      - feedback-net
+    environment:
+      NODE_ENV: production
+      TZ: Asia/Shanghai
+      PORT: "4000"
+      API_PREFIX: /api
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:-feedback}
+      DB_USER: ${DB_USER:-feedback}
+      DB_PASSWORD: ${DB_PASSWORD:?请在 .env 中设置 DB_PASSWORD}
+      DB_POOL_LIMIT: "10"
+      INIT_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?请在 .env 中设置 JWT_SECRET}
+      JWT_EXPIRES_IN: 7d
+      EMBED_SECRET: ${EMBED_SECRET:?请在 .env 中设置 EMBED_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@feedback.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?请在 .env 中设置 ADMIN_PASSWORD}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://127.0.0.1:8081}
+      WEB_BASE_URL: ${WEB_BASE_URL:-http://127.0.0.1:8081}
+      STORAGE_DRIVER: local
+      UPLOAD_DIR: /app/uploads
+      MAX_UPLOAD_MB: "5"
+      MAX_VIDEO_MB: "50"
+      MAX_POST_ATTACHMENTS: "9"
+      ALLOW_MIME: image/png,image/jpeg,image/gif,image/webp
+    volumes:
+      - ./data/uploads:/app/uploads
+
+  mysql:
+    image: mysql:8.0.36
+    container_name: feedback-mysql
+    restart: always
+    networks:
+      - feedback-net
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=256M
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-feedback}
+      MYSQL_USER: ${DB_USER:-feedback}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+networks:
+  feedback-net:
+    driver: bridge
